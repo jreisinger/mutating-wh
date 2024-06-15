@@ -9,9 +9,3 @@ End to end test:
 ```
 make e2e-test
 ```
-
-TODO
-
-- [x] add pic
-- [x] review code
-- [] add to github
