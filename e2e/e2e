@@ -30,29 +30,28 @@ helm install mutating-wh "$dir"/../charts/mutating-wh \
   --set image=mutating-wh:test \
   --wait
 
-TEST_RESULT=0
+EXIT_CODE=0
 
-echo "*** create pod requesting excessive memory and check it has been mutated ***"
-kubectl create -f "$dir"/nginx-pod-64Mi.yaml
+echo "*** create pod requesting excessive memory (> 32Mi) and check it has been mutated ***"
+helm install nginx-64 ./e2e/nginx --set memory=64
 MEM_REQ=$(kubectl get pod nginx-64 -o=jsonpath='{.spec.containers[0].resources.requests.memory}')
 if [ "$MEM_REQ" = "32Mi" ]; then
   echo "OK"
 else
   echo "FAIL"
-  TEST_RESULT=1
+  EXIT_CODE=$((EXIT_CODE + 1))
 fi
 
-echo "*** create pod that does not request excessive memory and check if it hasn't been mutated ***"
-kubectl create -f "$dir"/nginx-pod-16Mi.yaml
+echo "*** create pod that does not request excessive memory (< 32Mi) and check it hasn't been mutated ***"
+helm install nginx-16 ./e2e/nginx --set memory=16
 MEM_REQ=$(kubectl get pod nginx-16 -o=jsonpath='{.spec.containers[0].resources.requests.memory}')
 if [ "$MEM_REQ" = "16Mi" ]; then
   echo "OK"
 else
   echo "FAIL"
-  TEST_RESULT=1
+  EXIT_CODE=$((EXIT_CODE + 1))
 fi
 
 echo "*** clean up ***"
-helm uninstall mutating-wh
 kind delete cluster --name mutating-wh-test
-exit "$TEST_RESULT"
+exit "$EXIT_CODE"
